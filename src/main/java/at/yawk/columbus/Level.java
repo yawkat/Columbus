@@ -151,6 +151,41 @@ public class Level {
     }
 
     /**
+     * Deserialize this from a level.dat-compatible NBT tag. If values are missing in the tag they will not be modified.
+     */
+    public void deserialize(NamedTag named) {
+        TagCompound root = named.getValue().asCompound().getTag("Data").asCompound();
+        root.getOptional("initialized").ifPresent(tag -> initialized = tag.getByte() != 0);
+        root.getOptional("LevelName").ifPresent(tag -> name = tag.getString());
+        root.getOptional("generatorName").ifPresent(tag -> generatorName = tag.getString());
+        root.getOptional("generatorVersion").ifPresent(tag -> generatorVersion = tag.getInt());
+        root.getOptional("generatorOptions").ifPresent(tag -> generatorOptions = tag.getString());
+        root.getOptional("RandomSeed").ifPresent(tag -> seed = tag.getLong());
+        root.getOptional("MapFeatures").ifPresent(tag -> mapFeatures = tag.getByte() != 0);
+        root.getOptional("LastPlayed").ifPresent(tag -> lastPlayed = tag.getLong());
+        root.getOptional("SizeOnDisk").ifPresent(tag -> size = tag.getLong());
+        root.getOptional("allowCommands").ifPresent(tag -> allowCommands = tag.getByte() != 0);
+        root.getOptional("hardcore").ifPresent(tag -> hardcore = tag.getByte() != 0);
+        root.getOptional("GameType").ifPresent(tag -> gameType = tag.getInt());
+        root.getOptional("Time").ifPresent(tag -> time = tag.getLong());
+        root.getOptional("DayTime").ifPresent(tag -> dayTime = tag.getLong());
+        root.getOptional("SpawnX").ifPresent(tag -> spawnX = tag.getInt());
+        root.getOptional("SpawnY").ifPresent(tag -> spawnY = tag.getInt());
+        root.getOptional("SpawnZ").ifPresent(tag -> spawnZ = tag.getInt());
+        root.getOptional("raining").ifPresent(tag -> raining = tag.getByte() != 0);
+        root.getOptional("rainTime").ifPresent(tag -> rainTime = tag.getInt());
+        root.getOptional("thundering").ifPresent(tag -> thundering = tag.getByte() != 0);
+        root.getOptional("thunderTime").ifPresent(tag -> thunderTime = tag.getInt());
+
+        root.getOptional("GameRules").ifPresent(tag -> {
+            rules.clear();
+            tag.asCompound().getTags().entrySet().forEach(entry -> {
+                rules.put(entry.getKey(), entry.getValue().getValue().getString());
+            });
+        });
+    }
+
+    /**
      * A map of rules of this level.
      */
     public Map<String, String> getRules() {

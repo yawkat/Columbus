@@ -28,6 +28,11 @@ public final class TagShort extends TagValue {
     void deserialize(DataInput input) throws IOException {
         this.setValue(input.readShort());
     }
+
+    @Override
+    public Number getNumber() {
+        return getValue();
+    }
     
     @Override
     public TagShort clone() {

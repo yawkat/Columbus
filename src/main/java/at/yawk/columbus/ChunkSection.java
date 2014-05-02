@@ -85,6 +85,28 @@ public class ChunkSection {
         return res;
     }
 
+    public static ChunkSection deserialize(Chunk chunk, TagCompound from) {
+        byte chunkY = from.getByte("Y");
+        ChunkSection section = new ChunkSection(chunk, chunkY);
+        byte[] lower = ((TagArrayByte) from.getTag("Blocks")).getValue();
+        byte[] upper = from.getOptional("Add")
+                           .map(t -> Util.twice(((TagArrayByte) t).getValue()))
+                           .orElseGet(() -> new byte[LENGTH]);
+        short[] ids = Util.merge(lower, upper);
+        System.arraycopy(ids, 0, section.blockIds, 0, LENGTH);
+
+        byte[] data = Util.twice(((TagArrayByte) from.getTag("Data")).getValue());
+        System.arraycopy(data, 0, section.blockData, 0, LENGTH);
+
+        byte[] blight = Util.twice(((TagArrayByte) from.getTag("BlockLight")).getValue());
+        System.arraycopy(blight, 0, section.lightBlock, 0, LENGTH);
+
+        byte[] slight = Util.twice(((TagArrayByte) from.getTag("SkyLight")).getValue());
+        System.arraycopy(slight, 0, section.lightSky, 0, LENGTH);
+
+        return section;
+    }
+
     /**
      * Returns the block ID at the given location.
      * <p/>

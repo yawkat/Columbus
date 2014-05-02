@@ -59,7 +59,16 @@ class Util {
         byte[][] result = new byte[2][original.length];
         for (int i = 0; i < original.length; i++) {
             result[0][i] = (byte) (original[i] & 0xff);
-            result[1][i] = (byte) (original[i] >> 8 & 0xff);
+            result[1][i] = (byte) ((original[i] >> 8) & 0xff);
+        }
+        return result;
+    }
+
+    public static short[] merge(byte[] lower, byte[] upper) {
+        assert lower.length == upper.length;
+        short[] result = new short[lower.length];
+        for (int i = 0; i < result.length; i++) {
+            result[i] = (short) ((lower[i] & 0xff) | ((upper[i] & 0xff) << 8));
         }
         return result;
     }

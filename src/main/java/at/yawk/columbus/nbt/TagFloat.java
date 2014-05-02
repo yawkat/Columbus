@@ -28,6 +28,11 @@ public final class TagFloat extends TagValue {
     void deserialize(DataInput input) throws IOException {
         this.setValue(input.readFloat());
     }
+
+    @Override
+    public Number getNumber() {
+        return getValue();
+    }
     
     @Override
     public TagFloat clone() {

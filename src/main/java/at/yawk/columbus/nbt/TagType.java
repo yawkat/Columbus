@@ -86,8 +86,8 @@ public enum TagType {
     }
 
     static TagType forId(byte id) {
-        assert id > 0;
-        assert id < 12;
+        assert id > 0 : id;
+        assert id < 12 : id;
         return tagsById[id];
     }
 

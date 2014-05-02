@@ -99,7 +99,7 @@ public class Chunk {
 
     /**
      * Get the height of the given column.
-     *
+     * <p/>
      * <i>This only queries the height map, which may be incorrect.</i>
      *
      * @param x The x coordinate of the block
@@ -112,7 +112,7 @@ public class Chunk {
 
     /**
      * Set the height of the given column.
-     *
+     * <p/>
      * <i>This only sets the height map and does not edit any blocks.</i>
      *
      * @param x      The x coordinate of the block
@@ -178,6 +178,32 @@ public class Chunk {
         root.addTag("TileEntities", new TagList(this.getTileEntities()));
         root.addTag("TileTicks", new TagList(this.getTileTicks()));
         return new NamedTag("", new TagCompound(new NamedTag("Level", root)));
+    }
+
+    public static Chunk deserialize(World world, NamedTag from) {
+        TagCompound root = from.getValue().asCompound().getTag("Level").asCompound();
+        Chunk chunk = new Chunk(world, root.getInt("xPos"), root.getInt("zPos"));
+        root.getOptional("LastUpdate").ifPresent(tag -> chunk.lastUpdated = tag.getLong());
+        root.getOptional("TerrainPopulated").ifPresent(tag -> chunk.populated = tag.getByte() != 0);
+        root.getOptional("InhabitedTime").ifPresent(tag -> chunk.inhabitatedTime = tag.getLong());
+        root.getOptional("Biomes")
+            .ifPresent(tag -> System.arraycopy(((TagArrayByte) tag).getValue(),
+                                               0,
+                                               chunk.biomes,
+                                               0,
+                                               chunk.biomes.length));
+        root.getOptional("Sections").ifPresent(tag -> {
+            tag.asList().getTagsChecked(TagCompound.class).forEach(sectionTag -> {
+                ChunkSection section = ChunkSection.deserialize(chunk, sectionTag);
+                chunk.sections[section.getChunkY()] = section;
+            });
+        });
+        root.getOptional("Entities").ifPresent(tag -> chunk.entities = tag.asList().getTagsChecked(TagCompound.class));
+        root.getOptional("TileEntities")
+            .ifPresent(tag -> chunk.tileEntities = tag.asList().getTagsChecked(TagCompound.class));
+        root.getOptional("TileTicks")
+            .ifPresent(tag -> chunk.tileTicks = tag.asList().getTagsChecked(TagCompound.class));
+        return chunk;
     }
 
     /**

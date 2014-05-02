@@ -1,16 +1,15 @@
 package at.yawk.columbus.nbt;
 
+import com.google.common.collect.Lists;
 import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-
-import com.google.common.base.Function;
-import com.google.common.collect.Lists;
 
 /**
  * List tag.
@@ -19,20 +18,21 @@ import com.google.common.collect.Lists;
 @EqualsAndHashCode(callSuper = false)
 public final class TagList extends TagStructure {
     private List<Tag> tags;
-    
+
     public TagList() {
         this.tags = Lists.newArrayList();
     }
-    
-    public TagList(Iterable<? extends Tag> initialValue) {
-        this.tags = Lists.newArrayList(initialValue);
+
+    public TagList(Iterable<? extends Tag> initialValues) {
+        this.tags = Lists.newArrayList(initialValues);
+        assert checkListIntegrity(this.tags);
     }
-    
-    public TagList(Tag... initialValue) {
-        this.tags = Lists.newArrayList(initialValue);
+
+    public TagList(Tag... initialValues) {
+        this(Arrays.asList(initialValues));
     }
-    
-    static boolean checkListIntegrity(List<? extends Tag> tags) {
+
+    static boolean checkListIntegrity(Iterable<? extends Tag> tags) {
         TagType type = null;
         for (Tag tag : tags) {
             if (tag == null) {
@@ -63,18 +63,26 @@ public final class TagList extends TagStructure {
     }
 
     /**
+     * Return all tags in this list as a modifiable, checked list.
+     */
+    @SuppressWarnings("unchecked")
+    public <T> List<T> getTagsChecked(Class<T> type) {
+        return Collections.checkedList(new ArrayList(tags), type);
+    }
+
+    /**
      * Appends a tag.
      */
     public synchronized void addTag(Tag tag) {
         this.tags.add(tag);
     }
-    
+
     @Override
     synchronized void serialize(DataOutput output) throws IOException {
         List<Tag> currentTags = this.getTags();
-        
+
         assert TagList.checkListIntegrity(currentTags);
-        
+
         TagType type = currentTags.isEmpty() ? TagType.BYTE : currentTags.get(0).getType();
         output.write(type.getId());
         output.writeInt(currentTags.size());
@@ -82,10 +90,11 @@ public final class TagList extends TagStructure {
             tag.serialize(output);
         }
     }
-    
+
     @Override
     void deserialize(DataInput input) throws IOException {
-        TagType type = TagType.forId(input.readByte());
+        byte typeId = input.readByte();
+        TagType type = typeId == 0 ? TagType.BYTE : TagType.forId(typeId);
         int length = input.readInt();
         List<Tag> newTags = Lists.newArrayListWithCapacity(length);
         for (int i = 0; i < length; i++) {

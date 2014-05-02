@@ -2,10 +2,15 @@ package at.yawk.columbus;
 
 import at.yawk.columbus.nbt.NBT;
 import java.io.ByteArrayOutputStream;
+import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
+import java.util.Comparator;
 import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import java.util.zip.DeflaterOutputStream;
+import java.util.zip.InflaterOutputStream;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NonNull;
@@ -112,6 +117,47 @@ public final class World {
     }
 
     /**
+     * Reads the region file with the given coordinates. Coordinates are in region files = 32 chunks = 512 blocks.
+     */
+    public void readRegionFile(int x, int z, DataInput input) throws IOException {
+        ChunkData[] chunkArray = new ChunkData[32 * 32];
+        for (int i = 0; i < 32 * 32; i++) {
+            int id = input.readInt();
+            if (id == 0) { continue; }
+            ChunkData cdata = new ChunkData();
+            cdata.sector = id >> 8;
+            cdata.sectorCount = id & 0xff;
+            cdata.x = i & 0x1f;
+            cdata.z = i >> 5;
+            chunkArray[i] = cdata;
+        }
+        for (int i = 0; i < 32 * 32; i++) {
+            if (chunkArray[i] == null) {
+                input.skipBytes(4);
+                continue;
+            }
+            chunkArray[i].lastUpdated = input.readInt() * 1000L;
+        }
+        List<ChunkData> sorted = Stream.of(chunkArray)
+                                       .filter(d -> d != null)
+                                       .sorted(Comparator.comparingInt(d -> d.sector))
+                                       .collect(Collectors.toList());
+        int sector = 2;
+        for (ChunkData data : sorted) {
+            // skip to sector
+            for (; sector < data.sector; sector++) { input.skipBytes(0x1000); }
+            data.compressedData = new byte[input.readInt() - 1];
+            input.readByte(); // version
+            input.readFully(data.compressedData);
+            input.skipBytes((data.sectorCount << 12) - 5 - data.compressedData.length);
+            data.rawData = data.decompress();
+            data.chunk = Chunk.deserialize(this, NBT.deserializeArray(data.rawData));
+            chunks.put(getIndex(data.x, data.z), data.chunk);
+            sector += data.sectorCount;
+        }
+    }
+
+    /**
      * Refresh the height map of this world using the given lighter.
      */
     public synchronized void refreshHeightMap(Lighter lighter) {
@@ -142,6 +188,9 @@ public final class World {
         int sectorCount;
         byte[] rawData;
         byte[] compressedData;
+        int x;
+        int z;
+        long lastUpdated;
 
         private byte[] compress() {
             ByteArrayOutputStream res = new ByteArrayOutputStream(8096);
@@ -149,6 +198,18 @@ public final class World {
             try {
                 dos.write(this.rawData);
                 dos.finish();
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+            return res.toByteArray();
+        }
+
+        private byte[] decompress() {
+            ByteArrayOutputStream res = new ByteArrayOutputStream(8096);
+            InflaterOutputStream ios = new InflaterOutputStream(res);
+            try {
+                ios.write(this.compressedData);
+                ios.finish();
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }

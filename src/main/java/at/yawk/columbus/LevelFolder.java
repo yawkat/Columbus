@@ -1,13 +1,13 @@
 package at.yawk.columbus;
 
 import at.yawk.columbus.nbt.NBT;
-import java.io.DataOutputStream;
-import java.io.IOException;
-import java.io.OutputStream;
+import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import java.util.stream.IntStream;
 import lombok.Getter;
 import lombok.Setter;
 import org.apache.mahout.math.list.IntArrayList;
@@ -20,6 +20,8 @@ import org.apache.mahout.math.set.OpenLongHashSet;
  * A level/save folder.
  */
 public class LevelFolder {
+    private static final Pattern REGION_FILE_NAME = Pattern.compile("r\\.([0-9]+)\\.([0-9]+)\\.mca");
+
     public static final int WORLD_REGULAR = 0;
     public static final int WORLD_NETHER = -1;
     public static final int WORLD_END = 1;
@@ -40,6 +42,13 @@ public class LevelFolder {
     public LevelFolder(Level level, World overworld) {
         this(level);
         this.setWorld(WORLD_REGULAR, overworld);
+    }
+
+    /**
+     * Returns a world by type or null if no such world exists.
+     */
+    public World getWorldIfExists(int type) {
+        return this.worlds.get(type);
     }
 
     /**
@@ -103,12 +112,61 @@ public class LevelFolder {
 
                 Path regionFile = worldDir.resolve("r." + regionX + "." + regionZ + ".mca");
                 assert !Files.exists(regionFile) || Files.isRegularFile(regionFile) : regionFile;
-                try (final OutputStream o = Files.newOutputStream(regionFile)) {
+                try (OutputStream o = Files.newOutputStream(regionFile)) {
                     world.writeRegionFile(regionX, regionZ, new DataOutputStream(o));
                 } catch (IOException e) {
                     ref.compareAndSet(null, e);
                 }
             });
+        });
+
+        IOException exc = ref.get();
+        if (exc != null) { throw exc; }
+    }
+
+    public void read(Path directory) throws IOException {
+        assert directory != null;
+        assert Files.isDirectory(directory) : directory;
+
+        try (InputStream levelFile = Files.newInputStream(directory.resolve("level.dat"))) {
+            if (getLevel() == null) { setLevel(new Level()); }
+            getLevel().deserialize(NBT.deserializeStreamZipped(levelFile));
+        }
+
+        AtomicReference<IOException> ref = new AtomicReference<>();
+
+        IntStream.of(WORLD_REGULAR, WORLD_NETHER, WORLD_END).parallel().forEach(i -> {
+            if (ref.get() != null) { return; }
+
+            Path worldDir = directory.resolve(i == 0 ? "region" : "DIM" + i);
+
+            if (!Files.isDirectory(worldDir)) { return; }
+
+            World world = new World(new WorldProperties(128));
+
+            try {
+                Files.list(worldDir).parallel().forEach(entry -> {
+                    if (ref.get() != null) { return; }
+
+                    if (!Files.isRegularFile(entry)) { return; }
+                    Matcher matcher = REGION_FILE_NAME.matcher(entry.getFileName().toString());
+                    if (!matcher.find()) { return; }
+                    int regionX = Integer.parseInt(matcher.group(1));
+                    int regionZ = Integer.parseInt(matcher.group(2));
+
+                    try (InputStream is = Files.newInputStream(entry)) {
+                        world.readRegionFile(regionX, regionZ, new DataInputStream(is));
+                    } catch (IOException e) {
+                        ref.compareAndSet(null, e);
+                        return;
+                    }
+                });
+            } catch (IOException e) {
+                ref.compareAndSet(null, e);
+                return;
+            }
+
+            setWorld(i, world);
         });
 
         IOException exc = ref.get();

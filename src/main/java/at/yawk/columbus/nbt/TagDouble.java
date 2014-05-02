@@ -28,6 +28,11 @@ public final class TagDouble extends TagValue {
     void deserialize(DataInput input) throws IOException {
         this.setValue(input.readDouble());
     }
+
+    @Override
+    public Number getNumber() {
+        return getValue();
+    }
     
     @Override
     public TagDouble clone() {

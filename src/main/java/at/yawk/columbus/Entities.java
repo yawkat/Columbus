@@ -15,42 +15,42 @@ public class Entities {
      * Get the X position of an entity from its Tag.
      */
     public static double getEntityX(TagCompound compound) {
-        return ((TagList) compound.getTag("Pos")).getTags().get(0).getDouble();
+        return compound.getTag("Pos").asList().getTags().get(0).getDouble();
     }
 
     /**
      * Get the Y position of an entity from its Tag.
      */
     public static double getEntityY(TagCompound compound) {
-        return ((TagList) compound.getTag("Pos")).getTags().get(1).getDouble();
+        return compound.getTag("Pos").asList().getTags().get(1).getDouble();
     }
 
     /**
      * Get the Z position of an entity from its Tag.
      */
     public static double getEntityZ(TagCompound compound) {
-        return ((TagList) compound.getTag("Pos")).getTags().get(2).getDouble();
+        return compound.getTag("Pos").asList().getTags().get(2).getDouble();
     }
 
     /**
      * Set the X position of an entity in its Tag.
      */
     public static void setEntityX(TagCompound compound, double x) {
-        ((TagDouble) ((TagList) compound.getTag("Pos")).getTags().get(0)).setValue(x);
+        ((TagDouble) compound.getTag("Pos").asList().getTags().get(0)).setValue(x);
     }
 
     /**
      * Set the Y position of an entity in its Tag.
      */
     public static void setEntityY(TagCompound compound, double y) {
-        ((TagDouble) ((TagList) compound.getTag("Pos")).getTags().get(0)).setValue(y);
+        ((TagDouble) compound.getTag("Pos").asList().getTags().get(0)).setValue(y);
     }
 
     /**
      * Set the Z position of an entity in its Tag.
      */
     public static void setEntityZ(TagCompound compound, double z) {
-        ((TagDouble) ((TagList) compound.getTag("Pos")).getTags().get(0)).setValue(z);
+        ((TagDouble) compound.getTag("Pos").asList().getTags().get(0)).setValue(z);
     }
 
     /**

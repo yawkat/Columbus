@@ -28,6 +28,11 @@ public final class TagLong extends TagValue {
     void deserialize(DataInput input) throws IOException {
         this.setValue(input.readLong());
     }
+
+    @Override
+    public Number getNumber() {
+        return getValue();
+    }
     
     @Override
     public TagLong clone() {

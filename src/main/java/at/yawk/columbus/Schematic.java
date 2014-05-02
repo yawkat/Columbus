@@ -59,8 +59,8 @@ public final class Schematic {
         this.setBlockIds(((TagArrayByte) source.getTag("Blocks")).getValue());
         this.setBlockData(((TagArrayByte) source.getTag("Data")).getValue());
 
-        this.setEntities((List) ((TagList) source.getTag("Entities")).getTags());
-        this.setTileEntities((List) ((TagList) source.getTag("TileEntities")).getTags());
+        this.setEntities((List) source.getTag("Entities").asList().getTags());
+        this.setTileEntities((List) source.getTag("TileEntities").asList().getTags());
     }
 
     /**

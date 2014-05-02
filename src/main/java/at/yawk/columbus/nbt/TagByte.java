@@ -28,7 +28,12 @@ public final class TagByte extends TagValue {
     void deserialize(DataInput input) throws IOException {
         this.setValue(input.readByte());
     }
-    
+
+    @Override
+    public Number getNumber() {
+        return getValue();
+    }
+
     @Override
     public TagByte clone() {
         return new TagByte(this.getValue());

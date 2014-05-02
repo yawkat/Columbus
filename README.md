@@ -28,6 +28,9 @@ World overworld = new World(new WorldProperties(128));
 // create save folder handle
 LevelFolder folder = new LevelFolder(level, overwold);
 
+// load
+folder.read(Paths.get("/home/yawkat/.minecraft/saves/test/"));
+
 // create chunk at (0|0)
 Chunk zero = overworld.getOrCreateChunk(0, 0);
 // set (0|0|0) to block ID 5 (wood)
@@ -42,7 +45,8 @@ overworld.refreshHeightMap(lighter);
 overworld.fullbright();
 
 // save
-folder.print(Paths.get("~/.minecraft/saves/test/"));
+folder.print(Paths.get("/home/yawkat/.minecraft/saves/test/"));
 ```
 
-Reading world folders is not yet supported.
+Note that the default behaviour of `LevelFolder.print(Path)` overwrites old files including player data. You can keep
+ old files by using `LevelFolder.print(Path, boolean)` with `false` as the boolean parameter.

@@ -8,6 +8,7 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.NoSuchElementException;
+import java.util.Optional;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
@@ -67,9 +68,57 @@ public final class TagCompound extends TagStructure {
      * @throws java.util.NoSuchElementException if no tag with the name was found.
      */
     public Tag getTag(String name) {
-        NamedTag named = this.getTags().get(name);
-        if (named == null) { throw new NoSuchElementException(); }
-        return named.getValue();
+        return getOptional(name).orElseThrow(() -> new NoSuchElementException(name));
+    }
+
+    /**
+     * Returns a tag by path.
+     * <p/>
+     * For example,
+     * <p/>
+     * <code>
+     * this.getTagDeep("a", "b", "c")
+     * </code>
+     * <p/>
+     * equals
+     * <p/>
+     * <code>
+     * this.getTag("a").asCompound().getTag("b").asCompound().getTag("c")
+     * </code>
+     *
+     * @throws java.util.NoSuchElementException if any tag in the path does not exist.
+     * @throws java.lang.ClassCastException     if any tag in the path is not a TagCompound.
+     */
+    public Tag getTagDeep(String... names) {
+        if (names.length == 0) { return this; }
+        return getTagDeep(names, 0);
+    }
+
+    /**
+     * Recursive implementation for getTagDeep. start must be >= 0 and < names.length.
+     */
+    private Tag getTagDeep(String[] names, int start) {
+        assert names.length > start;
+        Tag tag = getTag(names[start]);
+        if (names.length == start + 1) { // reached the end of the recursion
+            return tag;
+        } else { // search further
+            return tag.asCompound().getTagDeep(names, start + 1);
+        }
+    }
+
+    /**
+     * Returns whether this compound contains a tag with the given name.
+     */
+    public boolean hasTag(String name) {
+        return getOptional(name).isPresent();
+    }
+
+    /**
+     * Returns a tag by name or an empty optional if no tag with that name exists.
+     */
+    public Optional<Tag> getOptional(String name) {
+        return Optional.ofNullable(this.getTags().get(name)).map(NamedTag::getValue);
     }
 
     /**
@@ -112,7 +161,7 @@ public final class TagCompound extends TagStructure {
      * Return a byte by name.
      *
      * @throws java.util.NoSuchElementException if no tag with the name was found.
-     * @throws java.lang.ClassCastException     if the tag is of a different type.
+     * @throws java.lang.ClassCastException     if the tag is not numeric.
      */
     public byte getByte(String name) {
         return this.getTag(name).getByte();
@@ -122,7 +171,7 @@ public final class TagCompound extends TagStructure {
      * Return a short by name.
      *
      * @throws java.util.NoSuchElementException if no tag with the name was found.
-     * @throws java.lang.ClassCastException     if the tag is of a different type.
+     * @throws java.lang.ClassCastException     if the tag is not numeric.
      */
     public short getShort(String name) {
         return this.getTag(name).getShort();
@@ -132,17 +181,27 @@ public final class TagCompound extends TagStructure {
      * Return an int by name.
      *
      * @throws java.util.NoSuchElementException if no tag with the name was found.
-     * @throws java.lang.ClassCastException     if the tag is of a different type.
+     * @throws java.lang.ClassCastException     if the tag is not numeric.
      */
     public int getInt(String name) {
         return this.getTag(name).getInt();
     }
 
     /**
+     * Return an int by name.
+     *
+     * @throws java.util.NoSuchElementException if no tag with the name was found.
+     * @throws java.lang.ClassCastException     if the tag is not numeric.
+     */
+    public long getLong(String name) {
+        return this.getTag(name).getLong();
+    }
+
+    /**
      * Return a float by name.
      *
      * @throws java.util.NoSuchElementException if no tag with the name was found.
-     * @throws java.lang.ClassCastException     if the tag is of a different type.
+     * @throws java.lang.ClassCastException     if the tag is not numeric.
      */
     public float getFloat(String name) {
         return this.getTag(name).getFloat();
@@ -152,10 +211,20 @@ public final class TagCompound extends TagStructure {
      * Return a double by name.
      *
      * @throws java.util.NoSuchElementException if no tag with the name was found.
-     * @throws java.lang.ClassCastException     if the tag is of a different type.
+     * @throws java.lang.ClassCastException     if the tag is not numeric.
      */
     public double getDouble(String name) {
         return this.getTag(name).getDouble();
+    }
+
+    /**
+     * Return a Number by name.
+     *
+     * @throws java.util.NoSuchElementException if no tag with the name was found.
+     * @throws java.lang.ClassCastException     if the tag is not numeric.
+     */
+    public Number getNumber(String name) {
+        return this.getTag(name).getNumber();
     }
 
     /**
